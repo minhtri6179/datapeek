@@ -1,5 +1,7 @@
 # datapeek
 
+[![CI](https://github.com/minhtri6179/datapeek/actions/workflows/ci.yml/badge.svg)](https://github.com/minhtri6179/datapeek/actions/workflows/ci.yml)
+
 A lightweight desktop database viewer with a fast virtualized datagrid. Built with Go (Wails v2) + React.
 
 ## Features (v0.1)
@@ -41,3 +43,20 @@ go test ./... # backend tests
 ## Configuration
 
 Connections live in `~/.datapeek/connections.json` (passwords in the OS keychain). Logs rotate at 10MB × 5 files, pruned after 7 days.
+
+## Telegram notifications
+
+CI and Release workflows send a Telegram message when builds succeed. Add two repository secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Value |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_CHAT_ID` | Your chat id — send the bot a message, then check `https://api.telegram.org/bot<TOKEN>/getUpdates` for `"chat":{"id":...}` |
+
+Test locally before pushing:
+
+```bash
+export TELEGRAM_BOT_TOKEN="123456:ABC..."
+export TELEGRAM_CHAT_ID="123456789"
+./scripts/notify-telegram.sh "hello from datapeek"
+```

@@ -21,8 +21,8 @@ func TestValidateConn(t *testing.T) {
 
 func TestValidateConnErrors(t *testing.T) {
 	cases := []config.Connection{
-		{},                                                    // everything missing
-		{Name: "x", Type: config.MySQL},                       // no host
+		{},                              // everything missing
+		{Name: "x", Type: config.MySQL}, // no host
 		{Name: "x", Type: config.MySQL, Host: "h"},            // no user
 		{Name: "x", Type: config.MySQL, Host: "h", User: "u"}, // no database
 		{Name: "x", Type: "redis", Host: "h", User: "u", Database: "d"},

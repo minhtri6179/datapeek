@@ -38,7 +38,7 @@ type SortSpec struct {
 
 // Limits guard against unbounded reads.
 const (
-	MaxPageSize = 500
+	MaxPageSize     = 500
 	DefaultPageSize = 100
 	MaxRowOffset    = 1_000_000_000
 )

@@ -28,6 +28,8 @@ type QueryResult struct {
 	Columns []ColumnMeta `json:"columns"`
 	Rows    [][]any      `json:"rows"`
 	Total   int64        `json:"total"`
+	// Truncated is true when console results hit MaxConsoleRows.
+	Truncated bool `json:"truncated,omitempty"`
 }
 
 // SortSpec is a client-requested sort.

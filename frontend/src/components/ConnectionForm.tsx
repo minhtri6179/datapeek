@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Connection } from '../store'
-import { DeleteConnection, SaveConnection, TestConnection } from '../../wailsjs/go/main/App'
 import { config } from '../../wailsjs/go/models'
+import { DeleteConnection, SaveConnection, TestConnection } from '../../wailsjs/go/main/App'
 
 interface Props {
-  editing: Connection | null
+  editing: config.Connection | null
   onSaved: () => void
   onCancel: () => void
 }

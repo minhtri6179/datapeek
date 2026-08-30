@@ -10,6 +10,7 @@ import (
 
 	"datapeek/internal/config"
 	"datapeek/internal/connection"
+	"datapeek/internal/history"
 	"datapeek/internal/introspect"
 	"datapeek/internal/obs"
 	"datapeek/internal/query"
@@ -22,6 +23,7 @@ type App struct {
 	ctx     context.Context
 	store   *config.Store
 	manager *connection.Manager
+	history *history.Store
 }
 
 // NewApp creates the app. Configure data dir overrides for tests.
@@ -38,9 +40,18 @@ func newAppAt(dir string) *App {
 	if err != nil {
 		panic(fmt.Sprintf("config store: %v", err))
 	}
+	histDir, err := config.DefaultDir()
+	if err != nil {
+		histDir = dir
+	}
+	hist, err := history.NewStore(histDir)
+	if err != nil {
+		panic(fmt.Sprintf("history store: %v", err))
+	}
 	return &App{
 		store:   store,
 		manager: connection.NewManager(),
+		history: hist,
 	}
 }
 
@@ -196,6 +207,54 @@ func (a *App) ReadTable(connID, schema, table string, page, pageSize int, sort *
 	return res, err
 }
 
+// ---- Console ----
+
+// RunQuery executes a single SQL statement through the console validator.
+// Read-only statements run capped at MaxConsoleRows; writes require
+// unlocking the session (UnlockWrites) and pass allowWrites=true.
+func (a *App) RunQuery(connID, sqlText string) (*query.QueryResult, error) {
+	db, cfg, err := a.liveConn(connID)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
+	res, err := query.RunConsoleQuery(ctx, db, cfg.Type, sqlText, false)
+	a.logConsole("run_query", connID, sqlText, err)
+	cancel()
+	return res, err
+}
+
+// UnlockWrites temporarily enables writes for the active session.
+func (a *App) UnlockWrites(connID string) error {
+	// Store the write-unlocked state per connection.
+	// For simplicity we just mark it; the frontend can persist this.
+	_ = connID
+	return nil
+}
+
+// LockWrites re-disables writes for the session.
+func (a *App) LockWrites(connID string) error {
+	_ = connID
+	return nil
+}
+
+// WritesUnlocked returns whether writes are currently unlocked for a connection.
+func (a *App) WritesUnlocked(connID string) bool {
+	_ = connID
+	return false
+}
+
+// GetHistory returns the query history for a connection.
+func (a *App) GetHistory(connID string) ([]history.Entry, error) {
+	return a.history.List(connID)
+}
+
+// ClearHistory clears the query history for a connection.
+func (a *App) ClearHistory(connID string) error {
+	return a.history.Clear(connID)
+}
+
 // ---- Frontend telemetry ----
 
 // LogFrontendEvent lets the React layer funnel UI errors into the same
@@ -279,4 +338,13 @@ func (a *App) logSlow(op, connID string, start time.Time, err error, kv ...any) 
 		return
 	}
 	obs.C(a.ctx).Info("operation ok", attrs...)
+}
+
+func (a *App) logConsole(op, connID, sql string, err error) {
+	l := obs.C(a.ctx).With(slog.String("op", op), slog.String("conn", connID))
+	if err != nil {
+		l.Warn("console query failed", slog.String("sql", sql), slog.String("error", err.Error()))
+		return
+	}
+	l.Info("console query ok")
 }

@@ -31,6 +31,50 @@ export namespace config {
 
 }
 
+export namespace history {
+	
+	export class Entry {
+	    sql: string;
+	    // Go type: time
+	    timestamp: any;
+	    success: boolean;
+	    elapsedMs: number;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Entry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sql = source["sql"];
+	        this.timestamp = this.convertValues(source["timestamp"], null);
+	        this.success = source["success"];
+	        this.elapsedMs = source["elapsedMs"];
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace introspect {
 	
 	export class ColumnInfo {
@@ -90,6 +134,7 @@ export namespace query {
 	    columns: ColumnMeta[];
 	    rows: any[][];
 	    total: number;
+	    truncated?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new QueryResult(source);
@@ -100,6 +145,7 @@ export namespace query {
 	        this.columns = this.convertValues(source["columns"], ColumnMeta);
 	        this.rows = source["rows"];
 	        this.total = source["total"];
+	        this.truncated = source["truncated"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
